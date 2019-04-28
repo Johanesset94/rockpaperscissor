@@ -7,7 +7,6 @@ const chai = require('chai');
 const chaiHttp = require('chai-http');
 chai.use(chaiHttp);
 
-
 describe('Running math tests', () => {
     it('should calculate 1+1=2', () => {
         assert.equal(1 + 1, 2);
@@ -26,7 +25,7 @@ describe('Running ping test', () => {
             });
     });
 });
-
+// ==== Create game tests ====
 describe('Running create game tests', () => {
     it('should create a new game', () => {
         let req = { name: 'Johan' };
@@ -38,7 +37,6 @@ describe('Running create game tests', () => {
                 chai.expect(res).to.have.status(200);
             });
     });
-
     it('should return status 400 since no name was provided', () => {
         let req = {};
         chai.request(app)
@@ -50,7 +48,7 @@ describe('Running create game tests', () => {
             });
     });
 });
-
+// ==== Join game tests ====
 describe('Running join game tests', () => {
     let gameId;
     before('Creating a new game for join game tests', () => {
@@ -117,7 +115,7 @@ describe('Running join game tests', () => {
             });
     });
 });
-
+// ===== Make move test =====
 describe('Running make move tests', () => {
     let gameId;
     const player1 = 'player1', player2 = 'player2';
@@ -141,8 +139,82 @@ describe('Running make move tests', () => {
                 });
         });
     });
-    it('should calculate 1+1=2', () => {
-        assert.equal(1 + 1, 2);
+    it('should not allow a player to make a move in a game that does not exists, returning 404', () => {
+        let req = { 
+            name: player1,
+            move: 'Rock'
+        };
+        chai.request(app)
+            .post('/api/games/' + 'a' + '/move')
+            .send(req)
+            .end((err, res) => {
+                chai.expect(err).to.be.null;
+                chai.expect(res).to.have.status(404);
+            });
     });
-
+    it('should not allow a player which is not in the game to make a move, returning 403', () => {
+        let req = {
+            name: 'Johan',
+            move: 'Rock'
+        };
+        chai.request(app)
+            .post('/api/games/' + gameId + '/move')
+            .send(req)
+            .end((err, res) => {
+                chai.expect(err).to.be.null;
+                chai.expect(res).to.have.status(403);
+            });
+    });
+    it('should not allow a player to make a move that is not allowed, returning 400', () => {
+        let req = {
+            name: player1,
+            move: 'Spock'
+        };
+        chai.request(app)
+            .post('/api/games/' + gameId + '/move')
+            .send(req)
+            .end((err, res) => {
+                chai.expect(err).to.be.null;
+                chai.expect(res).to.have.status(400);
+            });
+    });
+    it('should allow a player to make a legal move if the player is in the game and has not yet made a move', () => {
+        let req = {
+            name: player1,
+            move: 'Rock'
+        };
+        chai.request(app)
+            .post('/api/games/' + gameId + '/move')
+            .send(req)
+            .end((err, res) => {
+                chai.expect(err).to.be.null;
+                chai.expect(res).to.have.status(200);
+            });
+    });
+    it('should not allow a player to make a second move, returning 410', () => {
+        let req = {
+            name: player1,
+            move: 'Paper'
+        };
+        chai.request(app)
+            .post('/api/games/' + gameId + '/move')
+            .send(req)
+            .end((err, res) => {
+                chai.expect(err).to.be.null;
+                chai.expect(res).to.have.status(410);
+            });
+    });
+    it('should allow the second player to make a move after the first player did', () => {
+        let req = {
+            name: player2,
+            move: 'Scissor'
+        };
+        chai.request(app)
+            .post('/api/games/' + gameId + '/move')
+            .send(req)
+            .end((err, res) => {
+                chai.expect(err).to.be.null;
+                chai.expect(res).to.have.status(200);
+            });
+    });
 });

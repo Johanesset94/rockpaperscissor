@@ -2,8 +2,8 @@
 
 ## Getting started
 ### Requirements
-- node v8.10.0^
-- npm 3.5.2^
+- node v8.10.0 or higher
+- npm 3.5.2 or higher
 ### Installation
 npm install
 ### Run development server

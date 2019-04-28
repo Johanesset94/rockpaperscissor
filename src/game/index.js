@@ -5,7 +5,7 @@
 
 const games = {}; // 'Map' of games
 let idCounter = 0; // Counter that is incremented
-
+const legalMoves = ['rock', 'paper', 'scissor'];
 /**
  * Creates a new game of rock paper scissor.
  * @param {*} req http request which must contain body containing json object with name.
@@ -17,8 +17,8 @@ export function createGame(req, res) {
     } else {
         let gameId = idCounter++;
         let game = {
-            player1: req.body.name,
-            status: 'created'
+            status: 'created',
+            player1: req.body.name            
         };
         games[gameId] = game;
         res.status(200).send(gameId.toString());
@@ -41,12 +41,10 @@ export function getGameStatus(req, res) {
             player1: game.player1,
             player2: game.player2
         }
-
         // If both players made their move, that means that game is finished
         if (game.player1move != undefined && game.player2move != undefined) {
 
         }
-
         res.json(status);
     }
 }
@@ -68,6 +66,7 @@ export function joinGame(req, res) {
         res.status(409).send('Player 1 is named ' + req.body.name + '. Please choose another name!');
     } else {
         games[req.params.id].player2 = req.body.name;
+        games[req.params.id].status = 'In progress';
         res.status(200).json(games[req.params.id]);
     }
 }
@@ -75,11 +74,23 @@ export function joinGame(req, res) {
 export function makeMove(req, res) {
     if (games[req.params.id] == undefined) {
         res.status(404).send('The game could not be found. Make sure the id you entered is correct. Id provided: ' + req.params.id);
-    } else if (games[req.params.id].player2 != undefined) {
-        
-    } else if (games[req.params.id].player1 === req.body.name) {
-        
+    } else if ( !(games[req.params.id].player1 === req.body.name || games[req.params.id].player2 === req.body.name) ) {
+        res.status(403).send('You are not participating in this game of Rock-paper-scrissor! Please create a new game.');
+    } else if (!(legalMoves.indexOf(req.body.move.toLowerCase())>-1)) {
+        res.status(400).send('The move you tried to make is not allowed. Please use "rock", "paper" or "scissor".');
     } else {
-       
+        let playerMove;
+        if(games[req.params.id].player1 === req.body.name){
+            playerMove = 'player1Move';
+        } else {
+            playerMove = 'player2Move';
+        }
+
+        if(games[req.params.id][playerMove] != undefined){
+            res.status(410).send('You have already made your move.');
+        } else {
+            games[req.params.id][playerMove] = req.body.move.toLowerCase();
+            res.status(200).json(games[req.params.id]);
+        }
     }
 }
