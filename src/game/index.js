@@ -18,7 +18,7 @@ export function createGame(req, res) {
         let gameId = idCounter++;
         let game = {
             status: 'created',
-            player1: req.body.name            
+            player1: req.body.name
         };
         games[gameId] = game;
         res.status(200).send(gameId.toString());
@@ -35,17 +35,23 @@ export function getGameStatus(req, res) {
     if (game == undefined) {
         res.status(404).send('The game could not be found. Make sure the id you entered is correct. Id provided: ' + req.params.id);
     } else {
-        // Always allow anyone to see who plays
-        let status = {
-            gameId: req.params.id,
+        // If both players havent sent their moves yet we only reveal status of game and players
+        let restrictedGame = {
+            status: game.status,
             player1: game.player1,
             player2: game.player2
+        };
+        switch (game.status) {            
+            case 'created':
+            case 'ongoing':
+                res.status(200).json(restrictedGame);
+                break;
+            // We reveal everything if game is finished
+            case 'finished':
+                res.status(200).json(game);
+                break;
         }
-        // If both players made their move, that means that game is finished
-        if (game.player1move != undefined && game.player2move != undefined) {
 
-        }
-        res.json(status);
     }
 }
 
@@ -66,31 +72,69 @@ export function joinGame(req, res) {
         res.status(409).send('Player 1 is named ' + req.body.name + '. Please choose another name!');
     } else {
         games[req.params.id].player2 = req.body.name;
-        games[req.params.id].status = 'In progress';
-        res.status(200).json(games[req.params.id]);
+        games[req.params.id].status = 'ongoing';
+        //res.status(200).json(games[req.params.id]);
+        getGameStatus(req, res);
     }
 }
 
 export function makeMove(req, res) {
     if (games[req.params.id] == undefined) {
         res.status(404).send('The game could not be found. Make sure the id you entered is correct. Id provided: ' + req.params.id);
-    } else if ( !(games[req.params.id].player1 === req.body.name || games[req.params.id].player2 === req.body.name) ) {
+    } else if (games[req.params.id].status === 'created'){
+        res.status(400).send('Your opponent have not joined the game yet. Please wait');
+    } else if (games[req.params.id].status === 'finished'){
+        res.status(410).send('This game is already finished. Please create a new one to play again.');
+    } else if (!(games[req.params.id].player1 === req.body.name || games[req.params.id].player2 === req.body.name)) {
         res.status(403).send('You are not participating in this game of Rock-paper-scrissor! Please create a new game.');
-    } else if (!(legalMoves.indexOf(req.body.move.toLowerCase())>-1)) {
+    } else if (!(legalMoves.indexOf(req.body.move.toLowerCase()) > -1)) {
         res.status(400).send('The move you tried to make is not allowed. Please use "rock", "paper" or "scissor".');
     } else {
         let playerMove;
-        if(games[req.params.id].player1 === req.body.name){
+        if (games[req.params.id].player1 === req.body.name) {
             playerMove = 'player1Move';
         } else {
             playerMove = 'player2Move';
         }
 
-        if(games[req.params.id][playerMove] != undefined){
+        if (games[req.params.id][playerMove] != undefined) {
             res.status(410).send('You have already made your move.');
         } else {
             games[req.params.id][playerMove] = req.body.move.toLowerCase();
-            res.status(200).json(games[req.params.id]);
+            if (games[req.params.id]['player1Move'] != undefined && games[req.params.id]['player2Move'] != undefined) {
+                decideWinner(req.params.id);
+            }
+            //res.status(200).json();
+            getGameStatus(req, res);
+        }
+    }
+}
+/**
+ * Decides the winner of a finisihed game
+ * @param {} id id of game to be decided
+ */
+function decideWinner(id) {
+    games[id].status = 'finished';
+    if (games[id]['player1Move'] === games[id]['player2Move']) {
+        games[id]['result'] = 'draw';
+    } else {
+        games[id]['result'] = games[id].player2 + ' won';
+        switch (games[id]['player1Move']) {
+            case 'rock':
+                if (games[id]['player2Move'] === 'scissor') {
+                    games[id]['result'] = games[id].player1 + ' won';
+                }
+                break;
+            case 'paper':
+                if (games[id]['player2Move'] === 'rock') {
+                    games[id]['result'] = games[id].player1 + ' won';
+                }
+                break;
+            case 'scissor':
+                if (games[id]['player2Move'] === 'paper') {
+                    games[id]['result'] = games[id].player1 + ' won';
+                }
+                break;
         }
     }
 }
