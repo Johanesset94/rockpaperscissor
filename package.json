@@ -25,7 +25,7 @@
       "no-unused-vars": 1
     }
   },
-  "repository": "",
+  "repository": "https://github.com/Johanesset94/rockpaperscissor.git",
   "author": "Johan Sjöstrand",
   "license": "MIT",
   "dependencies": {

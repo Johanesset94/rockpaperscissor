@@ -58,7 +58,7 @@ export function getGameStatus(req, res) {
 /**
  * Function that will let player 2 join a game.
  * @param {*} req http request containing id of game and a body with the name of player 2
- * @param {*} res 404 if no game with id, 410 if game already have a second player, 409 if there is a name conflict and 200 if player successfully joined the game
+ * @param {*} res 404 if no game with id, 410 if game already have a second player, 409 if there is a name conflict and 200 with game status if player successfully joined
  */
 export function joinGame(req, res) {
     if (games[req.params.id] == undefined) {
@@ -73,11 +73,14 @@ export function joinGame(req, res) {
     } else {
         games[req.params.id].player2 = req.body.name;
         games[req.params.id].status = 'ongoing';
-        //res.status(200).json(games[req.params.id]);
         getGameStatus(req, res);
     }
 }
-
+/**
+ * Allows the players to make their moves.
+ * @param {} req Http request with body containing player name and player move. Game id should be provided as parameter.
+ * @param {*} res 404 if no game found, 400 if only one player in game or move is illegal, 410 if game is already finished or player already made their move, 403 if player is not in this game, but otherwise send game status with 200
+ */
 export function makeMove(req, res) {
     if (games[req.params.id] == undefined) {
         res.status(404).send('The game could not be found. Make sure the id you entered is correct. Id provided: ' + req.params.id);
@@ -104,7 +107,6 @@ export function makeMove(req, res) {
             if (games[req.params.id]['player1Move'] != undefined && games[req.params.id]['player2Move'] != undefined) {
                 decideWinner(req.params.id);
             }
-            //res.status(200).json();
             getGameStatus(req, res);
         }
     }
